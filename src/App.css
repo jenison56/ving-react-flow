@@ -26,7 +26,7 @@ body {
 
 /* Node Styles */
 .react-flow__node {
-  background: rgba(13, 28, 50, 0.9) !important;
+  /* background: rgba(13, 28, 50, 0.9) !important; */
   border: 1px solid rgba(0, 230, 202, 0.3) !important;
   border-radius: 8px !important;
   padding: 16px !important;
