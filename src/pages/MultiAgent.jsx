@@ -18,8 +18,17 @@ function MultiAgent() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [menu, setMenu] = useState(null);
+  const [expandedNodes, setExpandedNodes] = useState({});
   const [agentData, setAgentData] = useState(null);
   const ref = useRef(null);
+
+  // toggle expand state for a node
+  const toggleDetails = (id) => {
+    setExpandedNodes((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   useEffect(() => {
     const fetchAgentData = async () => {
@@ -52,6 +61,7 @@ function MultiAgent() {
         const associatedAgents =
           data?.configuration?.agent_data?.router_agent?.associated_agents ||
           [];
+
         const childNodes = associatedAgents.map((agent, index) => ({
           id: String(index + 2),
           position: {
@@ -61,17 +71,63 @@ function MultiAgent() {
           style: {
             width: 220,
             padding: "10px",
+            border: "1px solid #ccc",
+            borderRadius: "8px",
+            backgroundColor: "#fdfdfd",
           },
           data: {
             label: (
-              <div style={{ fontSize: "12px" }}>
-                <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+              <div style={{ fontSize: "12px", textAlign: "left" }}>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    marginBottom: "5px",
+                    color: "#333",
+                  }}
+                >
                   {agent.agent_name || "N/A"}
                 </div>
                 <div style={{ color: "#666" }}>
                   <div>Description: {agent.description || "N/A"}</div>
                   <div>Model: {agent.model_name || "N/A"}</div>
                 </div>
+
+                {/* Action Button */}
+                <button
+                  style={{
+                    marginTop: "8px",
+                    padding: "4px 8px",
+                    fontSize: "11px",
+                    backgroundColor: "#007bff",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "4px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => toggleDetails(String(index + 2))}
+                >
+                  {expandedNodes[String(index + 2)]
+                    ? "Hide Details"
+                    : "Show Details"}
+                </button>
+
+                {/* Extra info toggle */}
+                {expandedNodes[String(index + 2)] && (
+                  <div
+                    style={{
+                      marginTop: "6px",
+                      fontSize: "11px",
+                      color: "#444",
+                      background: "#f7f7f7",
+                      padding: "5px",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    <div>Agent ID: {agent.id || "Unknown"}</div>
+                    <div>Role: {agent.role || "Not specified"}</div>
+                    <div>Tools: {agent.tools?.join(", ") || "None"}</div>
+                  </div>
+                )}
               </div>
             ),
           },
@@ -91,7 +147,7 @@ function MultiAgent() {
     };
 
     fetchAgentData();
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, expandedNodes]);
 
   const onConnect = useCallback(
     (params) => setEdges((els) => addEdge(params, els)),
@@ -131,7 +187,11 @@ function MultiAgent() {
         fitView
       >
         <Background />
-        {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
+        {menu && (
+          <ContextMenu onClick={onPaneClick} {...menu}>
+            <h1>hii</h1>
+          </ContextMenu>
+        )}
       </ReactFlow>
     </div>
   );
