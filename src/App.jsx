@@ -15,7 +15,7 @@ const App = () => {
         </nav>
 
         <Routes>
-          <Route path="/" element={<Default />} />
+          {/* <Route path="/" element={<Default />} /> */}
           <Route path="/single-agent" element={<SingleAgent />} />
           <Route path="/multi-agent" element={<MultiAgent />} />
         </Routes>
