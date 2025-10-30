@@ -1,3 +1,5 @@
+import "../App.css";
+import "reactflow/dist/style.css";
 import React, { useCallback, useRef, useState, useEffect } from "react";
 import {
   ReactFlow,
@@ -6,34 +8,16 @@ import {
   useEdgesState,
   addEdge,
 } from "@xyflow/react";
-
-// CSS imports removed from this file per developer request
-
-import { initialNodes, initialEdges } from "../initialElements";
+import "@xyflow/react/dist/style.css";
 import ContextMenu from "../ContextMenu";
 
 function SingleAgent() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [menu, setMenu] = useState(null);
-  const [agentData, setAgentData] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [agentDetails, setAgentDetails] = useState(null);
   const ref = useRef(null);
-
-  // helper to safely pick first existing path from multiple possible payload shapes
-  const pick = (obj, paths = []) => {
-    for (const path of paths) {
-      let cur = obj;
-      for (const key of path) {
-        if (cur == null) {
-          cur = undefined;
-          break;
-        }
-        cur = cur[key];
-      }
-      if (cur !== undefined && cur !== null) return cur;
-    }
-    return undefined;
-  };
 
   useEffect(() => {
     const fetchAgentData = async () => {
@@ -44,185 +28,201 @@ function SingleAgent() {
           {
             headers: {
               Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MTc3NTQ2N30.wzr9qcbbTicFF8UTFFFkM_DHjNDy18RdLLDr8xCswUM",
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MTg2NTU2Nn0.-REv3f3sHMTXuJNl-bS3lmNk1l7JW3-LACcnmu127dk",
             },
           }
         );
 
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          throw new Error(`API error: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log("API Response:", JSON.stringify(data, null, 2));
-        setAgentData(data);
+        console.log("✅ Live API Response:", data);
 
-        const agentDisplayName = data.agent_name || data.agentName || agentName;
-        const rootNode = {
+        const agent =
+          data?.configuration?.agent_data?.agent ||
+          data?.configuration?.agent_data?.router_agent ||
+          {};
+
+        setAgentDetails(agent);
+
+        // --- Parent Node ---
+        const parentNode = {
           id: "1",
-          position: { x: 160, y: 40 },
-          data: { label: <div>{agentDisplayName}</div> },
+          position: { x: 300, y: 0 },
+          style: {
+            width: 220,
+            height: 70,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: "bold",
+            fontSize: "14px",
+            backgroundColor: "#e8f0fe",
+            border: "1px solid #ccc",
+            borderRadius: "8px",
+          },
+          data: {
+            label:
+              data?.configuration?.agent_name ||
+              agent.agentName ||
+              "Unnamed Agent",
+          },
         };
 
-        // prepare agent details
-        const agentObj = pick(data, [
-          ["configuration", "agent_data", "agent"],
-          ["agent_data", "agent"],
-          ["agent"],
-        ]);
-        // agentAppUrl is available in payload but not shown in node UI; omitted to avoid unused-vars lint
-        const agentDescription = pick(data, [
-          ["agentDescription"],
-          ["agent_description"],
-          ["configuration", "agent_data", "agent", "agentDescription"],
-          ["agent", "agentDescription"],
-        ]);
+        // --- Child Node ---
+        const childNode = {
+          id: "2",
+          position: { x: 280, y: 200 },
+          style: {
+            width: 320,
+            padding: "12px",
+            border: "1px solid #ccc",
+            borderRadius: "10px",
+            backgroundColor: "#fff",
+            textAlign: "left",
+          },
+          data: {
+            label: (
+              <div style={{ fontSize: "13px" }}>
+                <div>
+                  <strong>Description:</strong>{" "}
+                  {agent.agentDescription || "N/A"}
+                </div>
+                <div>
+                  <strong>Model:</strong> {agent.model_name || "N/A"}
+                </div>
+                <button
+                  style={{
+                    marginTop: "10px",
+                    padding: "6px 10px",
+                    border: "none",
+                    backgroundColor: "#2563eb",
+                    color: "white",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDetails((prev) => !prev);
+                  }}
+                >
+                  {showDetails ? "Hide Details" : "Show Details"}
+                </button>
+              </div>
+            ),
+          },
+        };
 
-        const associatedAgents =
-          data?.configuration?.agent_data?.router_agent?.associated_agents ||
-          data?.configuration?.agent_data?.associated_agents ||
-          data?.associated_agents ||
-          [];
-        let childNodes = [];
-        if (associatedAgents && associatedAgents.length > 0) {
-          childNodes = associatedAgents.map((agent, index) => {
-            const url = pick(agent, [
-              ["agentAppUrl"],
-              ["agent", "agentAppUrl"],
-              ["agent_data", "agent", "agentAppUrl"],
-            ]);
-            const desc = pick(agent, [
-              ["agentDescription"],
-              ["description"],
-              ["agent", "agentDescription"],
-            ]);
-            return {
-              id: String(index + 2),
-              position: {
-                x: 120 + index * 200 - (associatedAgents.length - 1) * 100,
-                y: 220,
-              },
-              data: {
-                label: (
-                  <Paper
-                    elevation={1}
-                    sx={{
-                      p: 2,
-                      borderRadius: 2,
-                      bgcolor: "background.paper",
-                      border: "1px solid",
-                      borderColor: "primary.main",
-                      minWidth: 250,
-                    }}
-                  >
-                    <Box
-                      sx={{ display: "flex", flexDirection: "column", gap: 1 }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        sx={{ color: "text.primary", fontWeight: 600 }}
-                      >
-                        {agent.agent_name || agent.agentName || "Agent"}
-                      </Typography>
-                      {url && (
-                        <Typography
-                          component="a"
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          variant="body2"
-                          sx={{
-                            color: "primary.main",
-                            textDecoration: "none",
-                            "&:hover": { textDecoration: "underline" },
-                          }}
-                        >
-                          {url}
-                        </Typography>
-                      )}
-                      <Typography
-                        variant="body2"
-                        sx={{ color: "text.secondary" }}
-                      >
-                        {desc || "No description"}
-                      </Typography>
-                    </Box>
-                  </Paper>
-                ),
-              },
-            };
-          });
-        } else if (agentObj) {
-          // render single-agent details using the compact card layout requested
-          const name =
-            (agentObj && (agentObj.agent_name || agentObj.agentName)) ||
-            data.agent_name ||
-            "N/A";
-          const description =
-            agentObj?.description || agentDescription || "N/A";
-          const model = agentObj?.model_name || agentObj?.model || "N/A";
-
-          childNodes = [
-            {
-              id: "2",
-              position: { x: 220, y: 220 },
-              data: {
-                label: (
-                  <div style={{ fontSize: "12px" }}>
-                    <div style={{ color: "#666" }}>
-                      <div>Description: {description}</div>
-                      <div>Model: {model}</div>
-                    </div>
-                  </div>
-                ),
-              },
-            },
-          ];
-        }
-
-        const newEdges = childNodes.map((node) => ({
-          id: `e1-${node.id}`,
+        const edge = {
+          id: "e1-2",
           source: "1",
-          target: node.id,
-        }));
+          target: "2",
+        };
 
-        setNodes([rootNode, ...childNodes]);
-        setEdges(newEdges);
+        setNodes([parentNode, childNode]);
+        setEdges([edge]);
       } catch (error) {
-        console.error("Error fetching agent data:", error);
+        console.error("❌ Error fetching agent data:", error);
       }
     };
 
     fetchAgentData();
-  }, [setNodes, setEdges]);
+  }, []);
+
+  // 👇 Dynamically inject extra details when showDetails toggles
+  useEffect(() => {
+    if (!agentDetails) return;
+
+    setNodes((prev) =>
+      prev.map((n) => {
+        if (n.id !== "2") return n;
+
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            label: (
+              <div style={{ fontSize: "13px" }}>
+                <div>
+                  <strong>Description:</strong>{" "}
+                  {agentDetails.agentDescription || "N/A"}
+                </div>
+                <div>
+                  <strong>Model:</strong> {agentDetails.model_name || "N/A"}
+                </div>
+
+                <button
+                  style={{
+                    marginTop: "10px",
+                    padding: "6px 10px",
+                    border: "none",
+                    backgroundColor: "#2563eb",
+                    color: "white",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDetails((prev) => !prev);
+                  }}
+                >
+                  {showDetails ? "Hide Details" : "Show Details"}
+                </button>
+
+                {showDetails && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      backgroundColor: "#f9fafb",
+                      padding: "8px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      color: "#374151",
+                    }}
+                  >
+                    {Object.entries(agentDetails)
+                      .filter(([key]) => key !== "agentPrompt") // 🚫 remove prompt
+                      .map(([key, value]) => (
+                        <div key={key} style={{ marginBottom: "4px" }}>
+                          <strong>{key}:</strong>{" "}
+                          {typeof value === "object"
+                            ? JSON.stringify(value)
+                            : value?.toString() || "N/A"}
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            ),
+          },
+        };
+      })
+    );
+  }, [showDetails, agentDetails]);
 
   const onConnect = useCallback(
     (params) => setEdges((els) => addEdge(params, els)),
     [setEdges]
   );
 
-  const onNodeContextMenu = useCallback(
-    (event, node) => {
-      event.preventDefault();
+  const onNodeContextMenu = useCallback((event, node) => {
+    event.preventDefault();
+    const pane = ref.current.getBoundingClientRect();
+    setMenu({
+      id: node.id,
+      top: event.clientY < pane.height - 200 && event.clientY,
+      left: event.clientX < pane.width - 200 && event.clientX,
+      right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
+      bottom: event.clientY >= pane.height - 200 && pane.height - event.clientY,
+    });
+  }, []);
 
-      const pane = ref.current.getBoundingClientRect();
-      setMenu({
-        id: node.id,
-        top: event.clientY < pane.height - 200 && event.clientY,
-        left: event.clientX < pane.width - 200 && event.clientX,
-        right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
-        bottom:
-          event.clientY >= pane.height - 200 && pane.height - event.clientY,
-      });
-    },
-    [setMenu]
-  );
-
-  const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
+  const onPaneClick = useCallback(() => setMenu(null), []);
 
   return (
     <div style={{ width: "100%", height: "100vh" }}>
-      {agentData && null}
       <ReactFlow
         ref={ref}
         nodes={nodes}
