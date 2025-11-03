@@ -1,132 +1,22 @@
 /* Import CSS styles from reactflow */
 @import "reactflow/dist/style.css";
-/*
-* {
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+* {
   box-sizing: border-box;
 }
 
-body {
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #0a192f;
-  color: #fff;
-  min-height: 100vh;
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
 }
-
-nav {
-  background-color: #0a192f;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-}
-
-nav a {
-  color: rgba(255, 255, 255, 0.7);
-  text-decoration: none;
-  font-size: 0.9rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-nav a:hover {
-  color: #fff;
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.react-flow {
-  background-color: #0a192f;
-}
-
-.react-flow__node {
-  border-radius: 8px;
-  padding: 0;
-  transition: transform 0.2s ease;
-}
-
-.react-flow__node:hover {
-  transform: translateY(-2px);
-}
-
-.react-flow__node:first-child {
-  background-color: #00bcd4;
-  color: white;
-  padding: 12px 24px;
-  font-weight: 600;
-  border: none;
-}
-
-.react-flow__node:not(:first-child) {
-  background-color: #162844;
-  border: 1px solid #00bcd4;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 12px;
-}
-
-.react-flow__edge {
-  transition: stroke 0.2s ease;
-}
-
-.react-flow__edge path {
-  stroke: #00bcd4;
-  stroke-width: 1.5;
-}
-
-.react-flow__edge:hover path {
-  stroke-width: 2;
-}
-
-.react-flow__handle {
-  background: #00bcd4;
-  width: 8px;
-  height: 8px;
-}
-
-.react-flow__node a {
-  color: #00bcd4;
-  text-decoration: none;
-  font-size: 0.85rem;
-  transition: color 0.2s ease;
-}
-
-.react-flow__node a:hover {
-  color: #4dd0e1;
-  text-decoration: underline;
-}
-
-.react-flow__node-default div {
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.react-flow__node-default div:first-child {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.react-flow__background {
-  background-color: #0a192f;
-}
-
-.react-flow__controls {
-  background: #162844;
-  border-radius: 8px;
-  padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.react-flow__controls button {
-  background: #162844;
-  border-radius: 4px;
-  color: rgba(255, 255, 255, 0.7);
-  border: none;
-  margin: 2px;
-}
-
-.react-flow__controls button:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-*/

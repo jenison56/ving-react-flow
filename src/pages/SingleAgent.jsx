@@ -28,17 +28,13 @@ function SingleAgent() {
           {
             headers: {
               Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MTg2NTU2Nn0.-REv3f3sHMTXuJNl-bS3lmNk1l7JW3-LACcnmu127dk",
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MjE4NDcxN30.bC5476gfxOMiRnE4CVYE0fmSC22d5NH4sOz54H5yBpo",
             },
           }
         );
 
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`API error: ${response.status}`);
         const data = await response.json();
-        console.log("✅ Live API Response:", data);
 
         const agent =
           data?.configuration?.agent_data?.agent ||
@@ -47,45 +43,35 @@ function SingleAgent() {
 
         setAgentDetails(agent);
 
-        // --- Parent Node ---
+        // 🌟 Parent Node styled exactly like Router Agent Multi
         const parentNode = {
           id: "1",
-          position: { x: 300, y: 0 },
-          style: {
-            width: 220,
-            height: 70,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "bold",
-            fontSize: "14px",
-            backgroundColor: "#e8f0fe",
-            border: "1px solid #ccc",
-            borderRadius: "8px",
-          },
+          position: { x: 700, y: 0 },
+          style: { width: 460 },
+          className: "root-node",
           data: {
-            label:
-              data?.configuration?.agent_name ||
-              agent.agentName ||
-              "Unnamed Agent",
+            label: (
+              <div className="root-label">
+                <h3 className="title blue">
+                  {data?.configuration?.agent_name ||
+                    agent.agentName ||
+                    "YouFibre Sales Agent"}
+                </h3>
+              </div>
+            ),
           },
         };
 
-        // --- Child Node ---
+        // 🌟 Child Node (Agent Details)
         const childNode = {
           id: "2",
-          position: { x: 280, y: 200 },
-          style: {
-            width: 320,
-            padding: "12px",
-            border: "1px solid #ccc",
-            borderRadius: "10px",
-            backgroundColor: "#fff",
-            textAlign: "left",
-          },
+          position: { x: 700, y: 300 },
+          style: { width: 460 },
+          className: "agent-node",
           data: {
             label: (
-              <div style={{ fontSize: "13px" }}>
+              <div className="agent-content">
+                <div className="title blue">Agent Details</div>
                 <div>
                   <strong>Description:</strong>{" "}
                   {agent.agentDescription || "N/A"}
@@ -93,23 +79,18 @@ function SingleAgent() {
                 <div>
                   <strong>Model:</strong> {agent.model_name || "N/A"}
                 </div>
-                <button
-                  style={{
-                    marginTop: "10px",
-                    padding: "6px 10px",
-                    border: "none",
-                    backgroundColor: "#2563eb",
-                    color: "white",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDetails((prev) => !prev);
-                  }}
-                >
-                  {showDetails ? "Hide Details" : "Show Details"}
-                </button>
+
+                <div className="button-center">
+                  <button
+                    className="toggle-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDetails((prev) => !prev);
+                    }}
+                  >
+                    {showDetails ? "Hide Summary" : "Show Summary"}
+                  </button>
+                </div>
               </div>
             ),
           },
@@ -119,6 +100,7 @@ function SingleAgent() {
           id: "e1-2",
           source: "1",
           target: "2",
+          style: { stroke: "#3b82f6", strokeWidth: 2 },
         };
 
         setNodes([parentNode, childNode]);
@@ -131,74 +113,60 @@ function SingleAgent() {
     fetchAgentData();
   }, []);
 
-  // 👇 Dynamically inject extra details when showDetails toggles
+  // 🌟 Dynamically update summary on toggle
   useEffect(() => {
     if (!agentDetails) return;
 
     setNodes((prev) =>
-      prev.map((n) => {
-        if (n.id !== "2") return n;
+      prev.map((n) =>
+        n.id !== "2"
+          ? n
+          : {
+              ...n,
+              data: {
+                ...n.data,
+                label: (
+                  <div className="agent-content">
+                    <div className="title blue">Agent Details</div>
+                    <div>
+                      <strong>Description:</strong>{" "}
+                      {agentDetails.agentDescription || "N/A"}
+                    </div>
+                    <div>
+                      <strong>Model:</strong> {agentDetails.model_name || "N/A"}
+                    </div>
 
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            label: (
-              <div style={{ fontSize: "13px" }}>
-                <div>
-                  <strong>Description:</strong>{" "}
-                  {agentDetails.agentDescription || "N/A"}
-                </div>
-                <div>
-                  <strong>Model:</strong> {agentDetails.model_name || "N/A"}
-                </div>
+                    <div className="button-center">
+                      <button
+                        className="toggle-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowDetails((prev) => !prev);
+                        }}
+                      >
+                        {showDetails ? "Hide Summary" : "Show More"}
+                      </button>
+                    </div>
 
-                <button
-                  style={{
-                    marginTop: "10px",
-                    padding: "6px 10px",
-                    border: "none",
-                    backgroundColor: "#2563eb",
-                    color: "white",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowDetails((prev) => !prev);
-                  }}
-                >
-                  {showDetails ? "Hide Details" : "Show Details"}
-                </button>
-
-                {showDetails && (
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      backgroundColor: "#f9fafb",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      color: "#374151",
-                    }}
-                  >
-                    {Object.entries(agentDetails)
-                      .filter(([key]) => key !== "agentPrompt") // 🚫 remove prompt
-                      .map(([key, value]) => (
-                        <div key={key} style={{ marginBottom: "4px" }}>
-                          <strong>{key}:</strong>{" "}
-                          {typeof value === "object"
-                            ? JSON.stringify(value)
-                            : value?.toString() || "N/A"}
-                        </div>
-                      ))}
+                    {showDetails && (
+                      <div className="summary-box">
+                        {Object.entries(agentDetails)
+                          .filter(([key]) => key !== "agentPrompt")
+                          .map(([key, value]) => (
+                            <div key={key} style={{ marginBottom: "4px" }}>
+                              <strong>{key}:</strong>{" "}
+                              {typeof value === "object"
+                                ? JSON.stringify(value)
+                                : value?.toString() || "N/A"}
+                            </div>
+                          ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ),
-          },
-        };
-      })
+                ),
+              },
+            }
+      )
     );
   }, [showDetails, agentDetails]);
 
@@ -222,7 +190,7 @@ function SingleAgent() {
   const onPaneClick = useCallback(() => setMenu(null), []);
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
+    <div className="flow-container dark-bg">
       <ReactFlow
         ref={ref}
         nodes={nodes}
@@ -233,8 +201,10 @@ function SingleAgent() {
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         fitView
+        panOnScroll
+        zoomOnScroll
       >
-        <Background />
+        <Background color="#1e293b" gap={20} />
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlow>
     </div>

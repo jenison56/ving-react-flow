@@ -13,7 +13,12 @@ const theme = createTheme({
       dark: "#12121c",
     },
     background: {
-      default: "#f5f5f5",
+      default: "#0f172a",
+      paper: "#1e293b",
+    },
+    text: {
+      primary: "#e2e8f0",
+      secondary: "#94a3b8",
     },
   },
 });
@@ -24,19 +29,37 @@ const App = () => {
       <BrowserRouter>
         <CssBaseline />
 
-        {/* Layout container */}
-        <Box sx={{ display: "flex" }}>
-          {/* Sidebar on the left */}
+        <Box
+          sx={{
+            display: "flex",
+            height: "100vh",
+            width: "100vw",
+            overflow: "hidden",
+            margin: 0,
+            padding: 0,
+            background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
+            position: "fixed", // ensures no scroll
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          }}
+        >
+          {/* Sidebar */}
           <Sidebar />
 
-          {/* Main content area */}
+          {/* Main ReactFlow content */}
           <Box
             component="main"
             sx={{
               flexGrow: 1,
-              p: 3,
-              backgroundColor: "background.default",
-              minHeight: "100vh",
+              height: "100%",
+              width: "100%",
+              overflow: "hidden",
+              background: "transparent",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
             }}
           >
             <Routes>

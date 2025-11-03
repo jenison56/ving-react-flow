@@ -1,4 +1,5 @@
 import "../App.css";
+import "./MultiAgent.css";
 import "reactflow/dist/style.css";
 import React, { useCallback, useRef, useEffect } from "react";
 import {
@@ -9,11 +10,10 @@ import {
   addEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { initialNodes, initialEdges } from "../initialElements";
 
 function MultiAgent() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const ref = useRef(null);
 
   useEffect(() => {
@@ -25,61 +25,28 @@ function MultiAgent() {
           {
             headers: {
               Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MTg2NTU2Nn0.-REv3f3sHMTXuJNl-bS3lmNk1l7JW3-LACcnmu127dk",
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MjE4NDcxN30.bC5476gfxOMiRnE4CVYE0fmSC22d5NH4sOz54H5yBpo",
             },
           }
         );
-        if (!response.ok) throw new Error("Network response was not ok");
+        if (!response.ok) throw new Error("Network error");
         const data = await response.json();
 
         const rootNode = {
           id: "1",
           position: { x: 700, y: 0 },
-          style: {
-            width: 220,
-            padding: "12px",
-            border: "2px solid #007bff",
-            borderRadius: "12px",
-            backgroundColor: "#e6f0ff",
-            textAlign: "center",
-            fontWeight: "bold",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+          style: { width: 460 },
+          className: "root-node",
+          data: {
+            label: data.agent_name || agentName,
+            expanded: false,
+            associatedAgents:
+              data?.configuration?.agent_data?.router_agent
+                ?.associated_agents || [],
           },
-          data: { label: data.agent_name || agentName },
         };
 
-        const associatedAgents =
-          data?.configuration?.agent_data?.router_agent?.associated_agents ||
-          [];
-
-        const spacingX = 420;
-        const totalWidth = (associatedAgents.length - 1) * spacingX;
-        const startX = 700 - totalWidth / 2;
-
-        const childNodes = associatedAgents.map((agent, index) => ({
-          id: String(index + 2),
-          position: { x: startX + index * spacingX, y: 300 },
-          style: {
-            width: 380,
-            padding: "14px",
-            border: "1px solid #ccc",
-            borderRadius: "12px",
-            backgroundColor: "#fff",
-            boxShadow: "0 6px 14px rgba(0,0,0,0.15)",
-          },
-          data: { agent, expanded: false },
-        }));
-
-        const newEdges = childNodes.map((node) => ({
-          id: `e1-${node.id}`,
-          source: "1",
-          target: node.id,
-          type: "smoothstep",
-          style: { strokeWidth: 2 },
-        }));
-
-        setNodes([rootNode, ...childNodes]);
-        setEdges(newEdges);
+        setNodes([rootNode]);
       } catch (error) {
         console.error("Error fetching agent data:", error);
       }
@@ -88,9 +55,8 @@ function MultiAgent() {
     fetchAgentData();
   }, []);
 
-  // ✅ Utility to recursively remove nodes & edges
-  const removeDescendants = (baseIds, allNodes, allEdges) => {
-    let idsToRemove = new Set(baseIds);
+  const removeDescendants = (rootIds, allNodes, allEdges) => {
+    let idsToRemove = new Set(rootIds);
     let changed = true;
 
     while (changed) {
@@ -103,55 +69,102 @@ function MultiAgent() {
       });
     }
 
-    const remainingNodes = allNodes.filter((n) => !idsToRemove.has(n.id));
-    const remainingEdges = allEdges.filter(
+    const newNodes = allNodes.filter((n) => !idsToRemove.has(n.id));
+    const newEdges = allEdges.filter(
       (e) => !idsToRemove.has(e.source) && !idsToRemove.has(e.target)
     );
 
-    return { remainingNodes, remainingEdges };
+    return { newNodes, newEdges };
   };
 
-  // 🔹 Toggle Applications
+  const handleParentClick = (node) => {
+    const { expanded, associatedAgents } = node.data;
+    if (!associatedAgents.length) return;
+
+    if (!expanded) {
+      const spacingX = 550;
+      const spacingY = 350;
+      const totalWidth = (associatedAgents.length - 1) * spacingX;
+      const startX = node.position.x - totalWidth / 2;
+
+      const newNodes = associatedAgents.map((agent, index) => ({
+        id: `agent-${index + 1}`,
+        position: {
+          x: startX + index * spacingX,
+          y: node.position.y + spacingY,
+        },
+        className: "agent-node",
+        style: { width: 460 },
+        data: { agent, expanded: false },
+      }));
+
+      const newEdges = newNodes.map((n) => ({
+        id: `edge-1-${n.id}`,
+        source: "1",
+        target: n.id,
+      }));
+
+      setNodes((prev) =>
+        prev
+          .map((n) =>
+            n.id === "1" ? { ...n, data: { ...n.data, expanded: true } } : n
+          )
+          .concat(newNodes)
+      );
+      setEdges((prev) => [...prev, ...newEdges]);
+    } else {
+      const agentIds = nodes
+        .filter((n) => n.id.startsWith("agent-"))
+        .map((n) => n.id);
+      const { newNodes, newEdges } = removeDescendants(agentIds, nodes, edges);
+      setNodes(
+        newNodes.map((n) =>
+          n.id === "1" ? { ...n, data: { ...n.data, expanded: false } } : n
+        )
+      );
+      setEdges(newEdges);
+    }
+  };
+
   const handleToggleApplications = (nodeId, agent) => {
     const selectedApps = agent.selectedApplications || [];
+    if (!selectedApps.length) return alert("No selected applications found");
 
     setNodes((prevNodes) => {
       const node = prevNodes.find((n) => n.id === nodeId);
       if (!node) return prevNodes;
 
       const isExpanded = node.data.expanded;
+      const spacingY = 350;
+      const offsetX = 250;
 
       if (!isExpanded) {
         const newNodes = [];
         const newEdges = [];
 
         selectedApps.forEach((app, index) => {
-          const appId = app.id || `${nodeId}-app-${index}`;
-          if (prevNodes.find((n) => n.id === appId)) return;
+          const isRight =
+            app.name?.toLowerCase().includes("digi") ||
+            app.name?.toLowerCase().includes("twin");
+          const direction = isRight ? 1 : -1;
+          const appId = `${nodeId}-app-${index}`;
+          const xShift = direction * (offsetX + index * 60);
 
           newNodes.push({
             id: appId,
             position: {
-              x: node.position.x + index * 260 - selectedApps.length * 100,
-              y: node.position.y + 230,
+              x: node.position.x + xShift,
+              y: node.position.y + spacingY,
             },
-            style: {
-              width: 340,
-              padding: "14px",
-              border: "1px solid #007bff",
-              borderRadius: "10px",
-              backgroundColor: "#ffffff",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-            },
+            className: "app-node",
+            style: { width: 460 },
             data: { app, expanded: false },
           });
 
           newEdges.push({
-            id: `e-${nodeId}-${appId}`,
+            id: `edge-${nodeId}-${appId}`,
             source: nodeId,
             target: appId,
-            type: "smoothstep",
-            style: { strokeWidth: 2 },
           });
         });
 
@@ -163,29 +176,20 @@ function MultiAgent() {
           ...newNodes,
         ];
       } else {
-        // ✅ Collapse & clean all descendants (apps + APIs)
-        setEdges((prevEdges) => {
-          const { remainingNodes, remainingEdges } = removeDescendants(
-            selectedApps.map((a) => a.id),
-            prevNodes,
-            prevEdges
-          );
-
-          setNodes(
-            remainingNodes.map((n) =>
-              n.id === nodeId
-                ? { ...n, data: { ...n.data, expanded: false } }
-                : n
-            )
-          );
-          return remainingEdges;
-        });
-        return prevNodes;
+        const removeIds = selectedApps.map((_, i) => `${nodeId}-app-${i}`);
+        const { newNodes, newEdges } = removeDescendants(
+          removeIds,
+          prevNodes,
+          edges
+        );
+        setEdges(newEdges);
+        return newNodes.map((n) =>
+          n.id === nodeId ? { ...n, data: { ...n.data, expanded: false } } : n
+        );
       }
     });
   };
 
-  // 🔹 Toggle APIs
   const handleToggleApis = (appId, app) => {
     const selectedApis = app.selectedApis || [];
     if (!selectedApis.length) return alert("No selected APIs found");
@@ -195,6 +199,8 @@ function MultiAgent() {
       if (!node) return prevNodes;
 
       const isExpanded = node.data.expanded;
+      const spacingY = 280;
+      const spacingX = 500;
 
       if (!isExpanded) {
         const newNodes = [];
@@ -202,31 +208,22 @@ function MultiAgent() {
 
         selectedApis.forEach((api, index) => {
           const apiId = `${appId}-api-${index}`;
-          if (prevNodes.find((n) => n.id === apiId)) return;
+          const offsetX = (index - (selectedApis.length - 1) / 2) * spacingX;
 
           newNodes.push({
             id: apiId,
             position: {
-              x: node.position.x + index * 250 - selectedApis.length * 100,
-              y: node.position.y + 220,
+              x: node.position.x + offsetX,
+              y: node.position.y + spacingY,
             },
-            style: {
-              width: 360,
-              padding: "12px",
-              border: "1px solid #28a745",
-              borderRadius: "10px",
-              backgroundColor: "#f8fff8",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-            },
+            className: "api-node",
+            style: { width: 460 },
             data: { api },
           });
-
           newEdges.push({
-            id: `e-${appId}-${apiId}`,
+            id: `edge-${appId}-${apiId}`,
             source: appId,
             target: apiId,
-            type: "smoothstep",
-            style: { strokeWidth: 2 },
           });
         });
 
@@ -238,45 +235,34 @@ function MultiAgent() {
           ...newNodes,
         ];
       } else {
-        // ✅ Clean up APIs and their edges
-        setEdges((prevEdges) => {
-          const { remainingNodes, remainingEdges } = removeDescendants(
-            selectedApis.map((_, i) => `${appId}-api-${i}`),
-            prevNodes,
-            prevEdges
-          );
-
-          setNodes(
-            remainingNodes.map((n) =>
-              n.id === appId
-                ? { ...n, data: { ...n.data, expanded: false } }
-                : n
-            )
-          );
-          return remainingEdges;
-        });
-        return prevNodes;
+        const removeIds = selectedApis.map((_, i) => `${appId}-api-${i}`);
+        const { newNodes, newEdges } = removeDescendants(
+          removeIds,
+          prevNodes,
+          edges
+        );
+        setEdges(newEdges);
+        return newNodes.map((n) =>
+          n.id === appId ? { ...n, data: { ...n.data, expanded: false } } : n
+        );
       }
     });
   };
 
-  // 🔹 Renderers
   const renderAgentNode = (agent, nodeId, expanded) => (
-    <div style={{ fontSize: "13px", textAlign: "left" }}>
-      <b>{agent.agent_name || "Unnamed Agent"}</b>
-      <div>Description: {agent.description || "N/A"}</div>
-      <div>Model: {agent.model_name || "N/A"}</div>
-      <div style={{ textAlign: "center", marginTop: "10px" }}>
+    <div className="agent-content">
+      <h3 className="title">Associated Agent</h3>
+      <b>Name:</b> {agent.agent_name}
+      <div>Description: {agent.description}</div>
+      <div>Model: {agent.model_name}</div>
+      <div className="prompt-box">
+        <b>Prompt:</b>
+        <div className="prompt-text">{agent.prompt_template}</div>
+      </div>
+      <div className="button-center">
         <button
+          className={`toggle-btn ${expanded ? "hide" : "show"}`}
           onClick={() => handleToggleApplications(nodeId, agent)}
-          style={{
-            padding: "6px 10px",
-            background: expanded ? "#dc3545" : "#007bff",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
         >
           {expanded ? "Hide Applications" : "Show Applications"}
         </button>
@@ -285,57 +271,48 @@ function MultiAgent() {
   );
 
   const renderAppNode = (app, expanded, appId) => (
-    <div style={{ fontSize: "13px" }}>
-      <b>Selected Applications</b>
-      <div>Name: {app.name || "Unnamed"}</div>
-      <div>ID: {app.id}</div>
-      <div style={{ textAlign: "center", marginTop: "8px" }}>
+    <div className="app-content">
+      <h3 className="title green">Selected Application</h3>
+      <b>Name:</b> {app.name} <br />
+      <b>ID:</b> {app.id}
+      <div className="button-center">
         <button
+          className={`toggle-btn ${expanded ? "hide" : "show"}`}
           onClick={() => handleToggleApis(appId, app)}
-          style={{
-            padding: "4px 10px",
-            backgroundColor: expanded ? "#dc3545" : "#28a745",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-          }}
         >
-          {expanded ? "Hide Selected APIs" : "Show Selected APIs"}
+          {expanded ? "Hide APIs" : "Show APIs"}
         </button>
       </div>
     </div>
   );
 
   const renderApiNode = (api) => (
-    <div style={{ fontSize: "12px" }}>
-      <b>Selected APIs</b>
-      <div>
-        <b>Name:</b> {api.Api || "Unnamed"}
-      </div>
-      <div>
-        <b>Method:</b> {api.method?.toUpperCase()}
-      </div>
-      <div>
-        <b>ID:</b> {api.id}
-      </div>
-      <div
-        style={{
-          maxHeight: "100px",
-          overflowY: "auto",
-          background: "#f9f9f9",
-          padding: "6px",
-          borderRadius: "6px",
-          fontSize: "11px",
-          marginTop: "6px",
-        }}
-      >
-        <b>Summary:</b> {api.summary || "No summary"}
+    <div className="api-content">
+      <h3 className="title green">Selected API</h3>
+      <b>Api:</b> {api.Api} <br />
+      <b>Method:</b> {api.method?.toUpperCase()} <br />
+      <b>ID:</b> {api.id} <br />
+      <b>Parameters:</b> {api.parameters} <br />
+      <div className="summary-box" onClick={(e) => e.stopPropagation()}>
+        <b>Summary:</b> <br />
+        {api.summary}
       </div>
     </div>
   );
 
   const updatedNodes = nodes.map((node) => {
+    if (node.id === "1")
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          label: (
+            <div onClick={() => handleParentClick(node)}>
+              <h3 className="title blue">{node.data.label}</h3>
+            </div>
+          ),
+        },
+      };
     if (node.data?.agent)
       return {
         ...node,
@@ -366,7 +343,7 @@ function MultiAgent() {
   );
 
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
+    <div className="flow-container">
       <ReactFlow
         ref={ref}
         nodes={updatedNodes}
