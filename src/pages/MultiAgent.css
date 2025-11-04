@@ -1,170 +1,132 @@
-/* === Container Background === */
-.flow-container {
+/* === Container === */
+.flow-wrapper {
   width: 100%;
   height: 100vh;
-  background: linear-gradient(180deg, #0a0f1c 0%, #1b2435 100%);
+  background: radial-gradient(circle at top, #0f172a, #1e293b);
   display: flex;
-  justify-content: center;
   align-items: center;
-  color: #e2e8f0;
-  font-family: "Inter", sans-serif;
-  overflow: hidden;
+  justify-content: center;
 }
 
-/* === Root Node (Router Agent Multi) === */
+/* === Root Node === */
 .root-node {
-  text-align: center;
+  background: #e0f2fe;
+  border: 2px solid #3b82f6;
   border-radius: 12px;
-  background: #1e293b;
-  color: #f8fafc;
-  border: 1px solid #475569;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-  padding: 16px;
-  width: 460px !important;
-  height: auto !important;
-  min-height: 100px;
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  padding: 10px 14px;
+  text-align: center;
+  font-weight: 600;
+  color: #0f172a;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .root-node:hover {
-  transform: scale(1.02);
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.45);
+  transform: scale(1.03);
+  box-shadow: 0 0 14px rgba(59, 130, 246, 0.6);
 }
 
-/* === Uniform Node Style (Agents, Apps, APIs) === */
-.agent-node,
-.app-node,
-.api-node {
-  text-align: center;
+/* === Agent Node === */
+.agent-node {
+  background: #f8fafc;
+  border: 2px solid #3b82f6;
   border-radius: 12px;
-  background-color: #1e293b;
-  color: #f1f5f9;
-  border: 1px solid #475569;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.5);
-  font-family: "Inter", sans-serif;
-  width: 460px !important;
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  padding: 14px;
-  transition: transform 0.2s ease, box-shadow 0.3s ease;
-}
-
-.agent-node:hover,
-.app-node:hover,
-.api-node:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 18px rgba(59, 130, 246, 0.4);
-}
-
-/* === API Nodes === */
-.api-node {
-  height: auto !important;
-  overflow: hidden;
-}
-
-/* === Titles === */
-.title {
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 6px;
+  padding: 8px 12px;
   text-align: center;
-  color: #3b82f6;
+  color: #0f172a;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+  font-size: 0.9rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.agent-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+/* Highlight for even agents */
+.agent-node.even {
+  border-color: #10b981;
+  background: #ecfdf5;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+/* === Button Nodes (Between Nodes) === */
+.button-node {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.button-node:hover {
+  background: #1d4ed8;
+  transform: scale(1.05);
+}
+
+/* === Pagination Controls === */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.pagination-controls button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.25s ease, transform 0.15s ease;
+}
+
+.pagination-controls button:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+}
+
+/* === Titles and Text === */
 .title.blue {
-  color: #3b82f6;
+  color: #2563eb;
+  margin: 0 0 4px 0;
 }
 
 .title.green {
-  color: #3b82f6;
+  color: #10b981;
+  margin: 0 0 4px 0;
 }
 
-/* === Node Content === */
-.agent-content,
-.app-content,
-.api-content {
-  text-align: left;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 13px;
-  line-height: 1.5;
+.agent-content.tiny,
+.api-content.tiny {
+  font-size: 0.85rem;
 }
 
-/* === Buttons === */
-.button-center {
-  text-align: center;
-  margin-top: 10px;
-}
+/* === Responsive Fixes === */
+@media (max-width: 768px) {
+  .flow-wrapper {
+    height: 80vh;
+  }
 
-.toggle-btn {
-  background: linear-gradient(90deg, #3b82f6, #2563eb);
-  border: none;
-  padding: 7px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #f8fafc;
-  font-weight: 600;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
+  .root-node,
+  .agent-node {
+    width: 130px !important;
+    padding: 6px;
+    font-size: 0.8rem;
+  }
 
-.toggle-btn:hover {
-  background: linear-gradient(90deg, #60a5fa, #3b82f6);
-  transform: translateY(-1px);
-}
-
-/* === Prompt Box === */
-.prompt-box {
-  background-color: #0f172a;
-  padding: 8px;
-  border-radius: 6px;
-  margin-top: 6px;
-  border: 1px solid #334155;
-}
-
-/* === Scrollable Summary Box === */
-.summary-box {
-  flex-grow: 1;
-  max-height: 110px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 10px 10px 18px 10px; /* extra bottom padding for breathing room */
-  margin-top: 10px;
-  margin-bottom: 6px;
-  background-color: #111827;
-  border-radius: 10px;
-  border: 1px solid #334155;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #f8fafc;
-  cursor: text;
-  -webkit-overflow-scrolling: touch;
-  scroll-behavior: smooth;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.summary-box:hover {
-  background-color: #1f2937;
-  box-shadow: inset 0 0 8px rgba(59, 130, 246, 0.3);
-}
-
-/* === Scrollbar Styling === */
-.summary-box::-webkit-scrollbar {
-  width: 8px;
-}
-
-.summary-box::-webkit-scrollbar-thumb {
-  background-color: #475569;
-  border-radius: 4px;
-}
-
-.summary-box::-webkit-scrollbar-thumb:hover {
-  background-color: #64748b;
-}
-
-/* === React Flow Background === */
-.react-flow__background {
-  background-color: transparent !important;
-  opacity: 0.15;
+  .button-node {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Drawer,
   List,
@@ -10,42 +10,52 @@ import {
   Typography,
   Divider,
   Box,
+  IconButton,
 } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import PersonIcon from "@mui/icons-material/Person";
 import GroupIcon from "@mui/icons-material/Group";
-import Logo from "../assets/logo.png"; // ✅ ensure path is correct
+import Logo from "../assets/logo.png";
 
 const drawerWidth = 240;
+const collapsedWidth = 70;
 
 const Sidebar = () => {
   const location = useLocation();
+  const [open, setOpen] = useState(true);
+
+  const toggleDrawer = () => setOpen(!open);
 
   return (
     <Drawer
       variant="permanent"
       sx={{
-        width: drawerWidth,
+        width: open ? drawerWidth : collapsedWidth,
         height: "100vh",
         flexShrink: 0,
+        transition: "width 0.3s ease",
         "& .MuiDrawer-paper": {
-          width: drawerWidth,
+          width: open ? drawerWidth : collapsedWidth,
           height: "100vh",
           boxSizing: "border-box",
           background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
           color: "#f8fafc",
           borderRight: "1px solid #334155",
           boxShadow: "4px 0 10px rgba(0,0,0,0.4)",
+          transition: "width 0.3s ease",
+          overflowX: "hidden",
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
         },
       }}
     >
-      {/* === Logo + Title === */}
+      {/* === Logo + Toggle === */}
       <Toolbar
         sx={{
-          justifyContent: "flex-start",
+          justifyContent: open ? "space-between" : "center",
           alignItems: "center",
           flexDirection: "row",
           py: 2,
@@ -55,29 +65,51 @@ const Sidebar = () => {
           borderBottom: "1px solid #334155",
         }}
       >
-        <Box
-          component="img"
-          src={Logo}
-          alt="Ving Logo"
+        {open && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
+            <Box
+              component="img"
+              src={Logo}
+              alt="Ving Logo"
+              sx={{
+                width: 45,
+                height: 45,
+                borderRadius: "8px",
+                backgroundColor: "#f8fafc",
+                objectFit: "contain",
+                boxShadow: "0 0 6px rgba(148,163,184,0.3)",
+              }}
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: "bold",
+                color: "#f8fafc",
+                letterSpacing: "1px",
+              }}
+            >
+              VING
+            </Typography>
+          </Box>
+        )}
+
+        <IconButton
+          onClick={toggleDrawer}
           sx={{
-            width: 45,
-            height: 45,
-            borderRadius: "8px",
-            backgroundColor: "#f8fafc",
-            objectFit: "contain",
-            boxShadow: "0 0 6px rgba(148,163,184,0.3)",
-          }}
-        />
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: "bold",
             color: "#f8fafc",
-            letterSpacing: "1px",
+            ml: open ? "auto" : 0,
+            transition: "all 0.3s ease",
+            "&:hover": { backgroundColor: "rgba(255,255,255,0.1)" },
           }}
         >
-          VING
-        </Typography>
+          {open ? <ChevronLeftIcon /> : <MenuIcon />}
+        </IconButton>
       </Toolbar>
 
       <Divider sx={{ backgroundColor: "rgba(255,255,255,0.1)" }} />
@@ -85,7 +117,10 @@ const Sidebar = () => {
       {/* === Navigation === */}
       <List sx={{ mt: 2, flexGrow: 1 }}>
         {/* Single Agent */}
-        <ListItem disablePadding>
+        <ListItem
+          disablePadding
+          sx={{ justifyContent: open ? "flex-start" : "center" }}
+        >
           <ListItemButton
             component={Link}
             to="/single-agent"
@@ -112,16 +147,20 @@ const Sidebar = () => {
                 color:
                   location.pathname === "/single-agent" ? "#0f172a" : "#e2e8f0",
                 minWidth: "40px",
+                justifyContent: "center",
               }}
             >
               <PersonIcon />
             </ListItemIcon>
-            <ListItemText primary="Single Agent" />
+            {open && <ListItemText primary="Single Agent" />}
           </ListItemButton>
         </ListItem>
 
         {/* Multi Agent */}
-        <ListItem disablePadding>
+        <ListItem
+          disablePadding
+          sx={{ justifyContent: open ? "flex-start" : "center" }}
+        >
           <ListItemButton
             component={Link}
             to="/multi-agent"
@@ -148,28 +187,31 @@ const Sidebar = () => {
                 color:
                   location.pathname === "/multi-agent" ? "#0f172a" : "#e2e8f0",
                 minWidth: "40px",
+                justifyContent: "center",
               }}
             >
               <GroupIcon />
             </ListItemIcon>
-            <ListItemText primary="Multi Agent" />
+            {open && <ListItemText primary="Multi Agent" />}
           </ListItemButton>
         </ListItem>
       </List>
 
       {/* === Footer === */}
-      <Box
-        sx={{
-          py: 2,
-          textAlign: "center",
-          fontSize: "0.75rem",
-          color: "rgba(248,250,252,0.5)",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          backgroundColor: "#1e293b",
-        }}
-      >
-        © 2025 Ving System
-      </Box>
+      {open && (
+        <Box
+          sx={{
+            py: 2,
+            textAlign: "center",
+            fontSize: "0.75rem",
+            color: "rgba(248,250,252,0.5)",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
+            backgroundColor: "#1e293b",
+          }}
+        >
+          © 2025 Ving System
+        </Box>
+      )}
     </Drawer>
   );
 };
