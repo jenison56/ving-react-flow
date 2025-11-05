@@ -10,6 +10,8 @@ import {
   addEdge,
   MarkerType,
 } from "@xyflow/react";
+import { Box, Typography, IconButton } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 
 function MultiAgent() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -19,6 +21,10 @@ function MultiAgent() {
   const [allAgents, setAllAgents] = useState([]);
   const [visibleNodes, setVisibleNodes] = useState([0, 4, 9]);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [expandedApps, setExpandedApps] = useState({});
+  const [visibleAppIndices, setVisibleAppIndices] = useState({});
 
   useEffect(() => {
     const fetchAgentData = async () => {
@@ -55,7 +61,7 @@ function MultiAgent() {
       updateNodesAndButtons();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visibleNodes, isExpanded, allAgents]);
+  }, [visibleNodes, isExpanded, allAgents, expandedApps, visibleAppIndices]);
 
   const handleParentClick = () => {
     if (!allAgents.length) return;
@@ -94,7 +100,6 @@ function MultiAgent() {
     const totalDisplay = sortedVisible.length;
     const startX = rootNode.position.x - ((totalDisplay - 1) * spacingX) / 2;
 
-    // Always recalculate positions for proper alignment
     const newNodes = sortedVisible.map((agentIndex, i) => {
       const agent = allAgents[agentIndex];
 
@@ -117,30 +122,191 @@ function MultiAgent() {
       markerEnd: { type: MarkerType.ArrowClosed },
     }));
 
-    setNodes((prev) => [prev.find((n) => n.id === "root"), ...newNodes]);
-    setEdges(newEdges);
+    // Add application child nodes for expanded agents
+    const appNodes = [];
+    const appEdges = [];
+    const appButtonNodes = [];
+
+    newNodes.forEach((agentNode) => {
+      const agentIndex = agentNode.data.index;
+      if (expandedApps[agentIndex]) {
+        const agent = allAgents[agentIndex];
+        const applications = agent.selected_applications || [];
+
+        console.log(
+          `Agent ${agentIndex + 1} has ${applications.length} applications:`,
+          applications.map((app) => app.application_name)
+        );
+
+        // Initialize visible app indices if not set
+        if (!visibleAppIndices[agentIndex] && applications.length > 0) {
+          const lastIdx = applications.length - 1;
+          const middleIdx = Math.floor(lastIdx / 2);
+          setVisibleAppIndices((prev) => ({
+            ...prev,
+            [agentIndex]: [0, middleIdx, lastIdx],
+          }));
+          return;
+        }
+
+        const visibleApps = visibleAppIndices[agentIndex] || [];
+        const sortedVisibleApps = [...visibleApps].sort((a, b) => a - b);
+
+        sortedVisibleApps.forEach((appIdx, displayIdx) => {
+          const app = applications[appIdx];
+          const appId = `app-${agentIndex}-${appIdx}`;
+
+          appNodes.push({
+            id: appId,
+            position: {
+              x:
+                agentNode.position.x +
+                (displayIdx - (sortedVisibleApps.length - 1) / 2) * 160,
+              y: agentNode.position.y + spacingY,
+            },
+            className: "app-node",
+            style: { width: 130 },
+            data: { application: app, agentIndex, appIndex: appIdx },
+          });
+
+          appEdges.push({
+            id: `edge-${agentNode.id}-${appId}`,
+            source: agentNode.id,
+            target: appId,
+            markerEnd: { type: MarkerType.ArrowClosed },
+          });
+        });
+
+        // Create three-dot buttons for apps
+        if (applications.length > 3 && sortedVisibleApps.length > 0) {
+          const firstAppNode = appNodes.find(
+            (n) => n.id === `app-${agentIndex}-${sortedVisibleApps[0]}`
+          );
+          const middleAppNode = appNodes.find(
+            (n) =>
+              n.id ===
+              `app-${agentIndex}-${
+                sortedVisibleApps[Math.floor(sortedVisibleApps.length / 2)]
+              }`
+          );
+          const lastAppNode = appNodes.find(
+            (n) =>
+              n.id ===
+              `app-${agentIndex}-${
+                sortedVisibleApps[sortedVisibleApps.length - 1]
+              }`
+          );
+
+          if (firstAppNode && middleAppNode) {
+            const leftAppIndices = [];
+            for (
+              let i = sortedVisibleApps[0] + 1;
+              i < sortedVisibleApps[Math.floor(sortedVisibleApps.length / 2)];
+              i++
+            ) {
+              leftAppIndices.push(i);
+            }
+
+            const leftHidden = leftAppIndices.filter(
+              (idx) => !sortedVisibleApps.includes(idx)
+            );
+            const leftVisible = leftAppIndices.filter((idx) =>
+              sortedVisibleApps.includes(idx)
+            );
+            const leftExpanded = leftHidden.length === 0;
+
+            if (leftAppIndices.length > 0) {
+              appButtonNodes.push({
+                id: `btn-app-${agentIndex}-left`,
+                type: "expandButton",
+                position: {
+                  x:
+                    (firstAppNode.position.x + middleAppNode.position.x) / 2 -
+                    25,
+                  y: firstAppNode.position.y,
+                },
+                draggable: false,
+                selectable: false,
+                style: { width: 50, height: 40 },
+                data: {
+                  label: "...",
+                  onClick: () =>
+                    leftExpanded
+                      ? handleHideApps(agentIndex, leftVisible)
+                      : handleShowHiddenApps(agentIndex, leftHidden),
+                },
+              });
+            }
+          }
+
+          if (middleAppNode && lastAppNode) {
+            const rightAppIndices = [];
+            for (
+              let i =
+                sortedVisibleApps[Math.floor(sortedVisibleApps.length / 2)] + 1;
+              i < sortedVisibleApps[sortedVisibleApps.length - 1];
+              i++
+            ) {
+              rightAppIndices.push(i);
+            }
+
+            const rightHidden = rightAppIndices.filter(
+              (idx) => !sortedVisibleApps.includes(idx)
+            );
+            const rightVisible = rightAppIndices.filter((idx) =>
+              sortedVisibleApps.includes(idx)
+            );
+            const rightExpanded = rightHidden.length === 0;
+
+            if (rightAppIndices.length > 0) {
+              appButtonNodes.push({
+                id: `btn-app-${agentIndex}-right`,
+                type: "expandButton",
+                position: {
+                  x:
+                    (middleAppNode.position.x + lastAppNode.position.x) / 2 -
+                    25,
+                  y: middleAppNode.position.y,
+                },
+                draggable: false,
+                selectable: false,
+                style: { width: 50, height: 40 },
+                data: {
+                  label: "...",
+                  onClick: () =>
+                    rightExpanded
+                      ? handleHideApps(agentIndex, rightVisible)
+                      : handleShowHiddenApps(agentIndex, rightHidden),
+                },
+              });
+            }
+          }
+        }
+      }
+    });
+
+    setNodes((prev) => [
+      prev.find((n) => n.id === "root"),
+      ...newNodes,
+      ...appNodes,
+    ]);
+    setEdges([...newEdges, ...appEdges]);
 
     setTimeout(() => {
-      createButtons(newNodes, sortedVisible);
+      createButtons(newNodes, sortedVisible, appButtonNodes);
     }, 10);
   };
 
-  const createButtons = (agentNodes, sortedVisible) => {
+  const createButtons = (agentNodes, sortedVisible, appButtonNodes = []) => {
     const expandButtons = [];
 
-    // Always create buttons around node 5 (index 4)
-    // Button 1: Between node 1 (index 0) and node 5 (index 4) - controls 2,3,4
-    // Button 2: Between node 5 (index 4) and node 10 (index 9) - controls 6,7,8,9
-
-    // Find node 1, 5, and 10
     const node1 = agentNodes.find((n) => n.id === `agent-1`);
     const node5 = agentNodes.find((n) => n.id === `agent-5`);
     const node10 = agentNodes.find((n) => n.id === `agent-10`);
 
     if (!node1 || !node5 || !node10) return;
 
-    // Button before node 5 (controls nodes 2,3,4)
-    const leftIndices = [1, 2, 3]; // indices for agents 2,3,4
+    const leftIndices = [1, 2, 3];
     const leftHidden = leftIndices.filter(
       (idx) => !sortedVisible.includes(idx)
     );
@@ -168,8 +334,7 @@ function MultiAgent() {
       },
     });
 
-    // Button after node 5 (controls nodes 6,7,8,9)
-    const rightIndices = [5, 6, 7, 8]; // indices for agents 6,7,8,9
+    const rightIndices = [5, 6, 7, 8];
     const rightHidden = rightIndices.filter(
       (idx) => !sortedVisible.includes(idx)
     );
@@ -197,7 +362,7 @@ function MultiAgent() {
       },
     });
 
-    setButtonNodes(expandButtons);
+    setButtonNodes([...expandButtons, ...appButtonNodes]);
   };
 
   const handleShowHidden = (hiddenIndices) => {
@@ -211,11 +376,90 @@ function MultiAgent() {
     setVisibleNodes((prev) => prev.filter((idx) => !nodesToHide.includes(idx)));
   };
 
-  const renderAgentNode = (agent, index) => (
+  const handleShowHiddenApps = (agentIndex, hiddenAppIndices) => {
+    setVisibleAppIndices((prev) => {
+      const currentVisible = prev[agentIndex] || [];
+      const newVisible = [...currentVisible, ...hiddenAppIndices];
+      return {
+        ...prev,
+        [agentIndex]: [...new Set(newVisible)].sort((a, b) => a - b),
+      };
+    });
+  };
+
+  const handleHideApps = (agentIndex, appsToHide) => {
+    setVisibleAppIndices((prev) => ({
+      ...prev,
+      [agentIndex]: (prev[agentIndex] || []).filter(
+        (idx) => !appsToHide.includes(idx)
+      ),
+    }));
+  };
+
+  const handleAgentClick = (agent, e) => {
+    e.stopPropagation();
+    setSelectedAgent(agent);
+    setPanelOpen(true);
+  };
+
+  const handleClosePanel = () => {
+    setPanelOpen(false);
+    setTimeout(() => setSelectedAgent(null), 300);
+  };
+
+  const toggleApps = (agentIndex, e) => {
+    e.stopPropagation();
+    setExpandedApps((prev) => ({
+      ...prev,
+      [agentIndex]: !prev[agentIndex],
+    }));
+  };
+
+  const renderAgentNode = (agent, index) => {
+    const hasApps =
+      agent.selected_applications && agent.selected_applications.length > 0;
+    const isAppsExpanded = expandedApps[index];
+
+    return (
+      <div className="agent-content tiny">
+        <div
+          onClick={(e) => handleAgentClick(agent, e)}
+          style={{ cursor: "pointer" }}
+        >
+          <h4 className="title blue">Associated Agent</h4>
+          <div>
+            <b>Name:</b> {agent.agent_name || `Agent ${index + 1}`}
+          </div>
+        </div>
+        {hasApps && (
+          <button
+            onClick={(e) => toggleApps(index, e)}
+            style={{
+              marginTop: "8px",
+              padding: "5px 10px",
+              fontSize: "11px",
+              cursor: "pointer",
+              backgroundColor: "#10b981",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              fontWeight: "500",
+            }}
+          >
+            {isAppsExpanded ? "Hide Apps" : "Show Apps"}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const renderAppNode = (app, appIndex) => (
     <div className="agent-content tiny">
-      <h4 className="title blue">Associated Agent</h4>
-      <div>
-        <b>Name:</b> {agent.agent_name || `Agent ${index + 1}`}
+      <h4 className="title blue" style={{ fontSize: "0.85rem" }}>
+        Application
+      </h4>
+      <div style={{ fontSize: "0.8rem" }}>
+        <b>Name:</b> {app.application_name || `App ${appIndex + 1}`}
       </div>
     </div>
   );
@@ -249,7 +493,6 @@ function MultiAgent() {
             label: (
               <div onClick={handleParentClick}>
                 <h4 className="title blue">{n.data.label}</h4>
-                <small>(Click to expand/collapse)</small>
               </div>
             ),
           },
@@ -261,6 +504,15 @@ function MultiAgent() {
           data: {
             ...n.data,
             label: renderAgentNode(n.data.agent, n.data.index),
+          },
+        };
+      }
+      if (n.data?.application) {
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            label: renderAppNode(n.data.application, n.data.appIndex),
           },
         };
       }
@@ -288,6 +540,117 @@ function MultiAgent() {
       >
         <Background />
       </ReactFlow>
+
+      {/* Agent Details Side Panel */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: 20,
+          right: panelOpen ? 20 : -450,
+          width: 400,
+          maxHeight: "calc(100vh - 40px)",
+          bgcolor: "white",
+          borderRadius: 2,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+          transition: "right 0.3s ease-in-out",
+          zIndex: 1000,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid #e0e0e0",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            bgcolor: "#f5f5f5",
+          }}
+        >
+          <Typography variant="h6" color="primary" fontWeight="bold">
+            Agent Details
+          </Typography>
+          <IconButton onClick={handleClosePanel} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {selectedAgent && (
+          <Box sx={{ p: 3, overflow: "auto", flex: 1 }}>
+            <Typography
+              variant="h5"
+              sx={{ mb: 2, color: "#2563eb", fontWeight: "bold" }}
+            >
+              {selectedAgent.agent_name || "Unnamed Agent"}
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#333" }}
+              >
+                Description
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: "#666", lineHeight: 1.6 }}
+              >
+                {selectedAgent.description || "No description available"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#333" }}
+              >
+                Model Name
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#666",
+                  bgcolor: "#f0f0f0",
+                  p: 1.5,
+                  borderRadius: 1,
+                  fontFamily: "monospace",
+                }}
+              >
+                {selectedAgent.model_name || "Not specified"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#333" }}
+              >
+                Prompt Template
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  bgcolor: "#f5f5f5",
+                  p: 2,
+                  borderRadius: 1,
+                  fontFamily: "monospace",
+                  fontSize: "0.85rem",
+                  color: "#444",
+                  border: "1px solid #e0e0e0",
+                  maxHeight: "300px",
+                  overflow: "auto",
+                }}
+              >
+                {selectedAgent.prompt_template ||
+                  "No prompt template available"}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Box>
     </div>
   );
 }
