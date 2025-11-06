@@ -5,6 +5,110 @@
     "agentAppUrl": "https://192.168.1.4:4020",
     "agentPrompt": "You are an expert AI sales and support agent for YouFibre, a UK-based, award-winning challenger full-fibre provider. Your job is to engage customers like a knowledgeable and customer-focused sales executive from our UK support team—clear, friendly, efficient, and persuasive. Response Style Rules: Keep answers concise (3–6 sentences) by default. Be elaborate ONLY when the query specifically requires explanation, comparison, or persuasion (e.g., asking about competitors, package details, or promotional terms). Use bullet points for clarity when listing packages, benefits, or key terms. Avoid repeating information the user already has unless asked to clarify. Competitor Conversion Rule: When a customer mentions a competitor (e.g., BT, Virgin Media, Sky): Acknowledge the query politely. Frame it as a fair comparison to help them find the best value. Qualify by asking about their needs (e.g., \"To help compare, could you tell me how many people use the internet at home, and is it mainly for streaming, gaming, or working from home?\"). Present a tailored YouFibre plan as the superior solution, emphasizing our unique advantages: symmetrical speeds (equally fast uploads and downloads), no mid-contract price hikes, and a direct full-fibre (FTTP) connection. Upsell & Cross-sell: If a customer asks for a basic package (e.g., YouFibre 150), briefly suggest the next tier up if their usage hints at it. For example: \"The 150 Mbps is great for browsing, but with our current promotion, the 1000 Mbps is actually cheaper than the 500 Mbps and is perfect for future-proofing your home for gaming and 4K streaming.\" If a customer mentions poor Wi-Fi signal in parts of their home, suggest the YouMesh add-on. If a customer needs a landline, offer the YouPhone digital phone service. Handling Objections: Address concerns (price, installation, contract) factually and persuasively using the knowledge base. Price: Counter with the value of the fixed price promise (no in-contract hikes) and the superior performance of symmetrical speeds. Installation: Reassure them about the quick and simple one-time installation process done by a professional engineer. Out-of-Scope & Specific Queries: If the query is outside your knowledge base or requires account-specific information (e.g., \"Can I get service at my exact postcode?\", \"What is my current bill?\"), provide the following: \"For that specific query, our team will need to assist you directly. You can call Customer Support at 0330 822 2222, or email us at hello@youfibre.com.",
     "documentName": "YouFibre Customer Service and Sales.txt",
-    "agentDescription": "This workflow creates a sales agent for YouFibre UK, This agent can have any sales realted conversation for YouFibre UK"
-  }
+    "agentDescription": "This workflow creates a sales agent for YouFibre UK. This agent can have any sales-related conversation for YouFibre UK."
+  },
+  "selected_applications": [
+    {
+      "application_name": "YouFibre CRM Dashboard",
+      "description": "Internal dashboard for sales and customer management.",
+      "version": "1.0",
+      "selected_apis": [
+        {
+          "Api": "/crm/leads",
+          "id": 400001,
+          "method": "get",
+          "parameters": "[]",
+          "request_body": "{}",
+          "summary": "Fetches all active customer leads for sales agents.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/crm/leads/{id}",
+          "id": 400002,
+          "method": "put",
+          "parameters": "[lead_id]",
+          "request_body": "{\"status\": \"converted\"}",
+          "summary": "Updates a specific customer lead's status to converted.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/crm/notes",
+          "id": 400003,
+          "method": "post",
+          "parameters": "[]",
+          "request_body": "{\"lead_id\": 123, \"note\": \"Follow-up scheduled\"}",
+          "summary": "Adds a follow-up note for a lead in the CRM system.",
+          "user_description": "-"
+        }
+      ]
+    },
+    {
+      "application_name": "YouFibre Service Checker",
+      "description": "Verifies fibre availability by postcode.",
+      "version": "1.1",
+      "selected_apis": [
+        {
+          "Api": "/service-checker/availability",
+          "id": 400004,
+          "method": "get",
+          "parameters": "[postcode]",
+          "request_body": "{}",
+          "summary": "Checks broadband availability for a given postcode.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/service-checker/installation-slots",
+          "id": 400005,
+          "method": "get",
+          "parameters": "[postcode]",
+          "request_body": "{}",
+          "summary": "Retrieves available installation slots for a service area.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/service-checker/register-interest",
+          "id": 400006,
+          "method": "post",
+          "parameters": "[]",
+          "request_body": "{\"email\": \"user@youfibre.com\", \"postcode\": \"AB12 3CD\"}",
+          "summary": "Registers a user's interest in YouFibre service availability.",
+          "user_description": "-"
+        }
+      ]
+    },
+    {
+      "application_name": "YouFibre Support System",
+      "description": "Tool for creating and managing support tickets.",
+      "version": "2.0",
+      "selected_apis": [
+        {
+          "Api": "/support/tickets",
+          "id": 400007,
+          "method": "get",
+          "parameters": "[status]",
+          "request_body": "{}",
+          "summary": "Fetches a list of support tickets filtered by status.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/support/ticket/create",
+          "id": 400008,
+          "method": "post",
+          "parameters": "[]",
+          "request_body": "{\"user\": \"John Doe\", \"issue\": \"Slow connection\"}",
+          "summary": "Creates a new support ticket for a customer.",
+          "user_description": "-"
+        },
+        {
+          "Api": "/support/ticket/{id}/update",
+          "id": 400009,
+          "method": "patch",
+          "parameters": "[ticket_id]",
+          "request_body": "{\"status\": \"resolved\"}",
+          "summary": "Updates the status of an existing ticket.",
+          "user_description": "-"
+        }
+      ]
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 import "../App.css";
-import "./MultiAgent.css";
+import "./pages.css";
 import "reactflow/dist/style.css";
 import React, { useCallback, useRef, useEffect, useState } from "react";
 import {
@@ -19,9 +19,12 @@ function MultiAgent() {
   const [buttonNodes, setButtonNodes] = useState([]);
   const ref = useRef(null);
   const [allAgents, setAllAgents] = useState([]);
+  const [rootAgent, setRootAgent] = useState(null);
   const [rootAgentName, setRootAgentName] = useState("Router Agent Multi");
   const [visibleNodes, setVisibleNodes] = useState([0, 4, 9]);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [selectedRootAgent, setSelectedRootAgent] = useState(null);
+  const [rootPanelOpen, setRootPanelOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -41,11 +44,11 @@ function MultiAgent() {
         const data = await res.json();
 
         const agentName = data.agent_name || "Router Agent Multi";
-        const associatedAgents =
-          data?.configuration?.agent_data?.router_agent?.associated_agents ||
-          [];
+        const routerAgentData = data?.configuration?.agent_data?.router_agent || {};
+        const associatedAgents = routerAgentData?.associated_agents || [];
 
         setRootAgentName(agentName);
+        setRootAgent(routerAgentData);
         setAllAgents(associatedAgents);
 
         setNodes([
@@ -54,7 +57,7 @@ function MultiAgent() {
             position: { x: 700, y: 0 },
             style: { width: 340 },
             className: "root-node",
-            data: { label: agentName, expanded: false },
+            data: { label: agentName, expanded: true, rootAgent: routerAgentData },
           },
         ]);
       } catch (err) {
@@ -65,49 +68,47 @@ function MultiAgent() {
   }, [setNodes]);
 
   useEffect(() => {
-    if (isExpanded && allAgents.length > 0) {
-      updateNodesAndButtons();
+    if (isExpanded && allAgents.length > 0 && nodes.length > 0) {
+      const rootNode = nodes.find((n) => n.id === "root");
+      if (rootNode) {
+        updateNodesAndButtons();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     visibleNodes,
     isExpanded,
-    allAgents,
+    allAgents.length,
     expandedApps,
     visibleAppIndices,
     expandedApis,
     visibleApiIndices,
+    nodes.length,
   ]);
 
-  const handleParentClick = () => {
-    if (!allAgents.length) return;
+  const handleParentClick = (e) => {
+    e.stopPropagation();
+    setPanelOpen(false);
+    setTimeout(() => setSelectedAgent(null), 300);
+    setAppPanelOpen(false);
+    setTimeout(() => setSelectedApplication(null), 300);
+    setApiDetailsPanelOpen(false);
+    setTimeout(() => setSelectedApi(null), 300);
+    setSelectedRootAgent(rootAgent);
+    setRootPanelOpen(true);
+  };
 
-    if (!isExpanded) {
-      setIsExpanded(true);
-      updateNodesAndButtons();
-    } else {
-      setIsExpanded(false);
-      setVisibleNodes([0, 4, 9]);
-      setNodes([
-        {
-          id: "root",
-          position: { x: 700, y: 0 },
-          style: { width: 340 },
-          className: "root-node",
-          data: {
-            label: rootAgentName,
-            expanded: false,
-          },
-        },
-      ]);
-      setEdges([]);
-      setButtonNodes([]);
-    }
+  const handleCloseRootPanel = () => {
+    setRootPanelOpen(false);
+    setTimeout(() => setSelectedRootAgent(null), 300);
   };
 
   const updateNodesAndButtons = () => {
     const rootNode = nodes.find((n) => n.id === "root");
-    if (!rootNode || allAgents.length === 0) return;
+    if (!rootNode || allAgents.length === 0) {
+      console.warn("updateNodesAndButtons: Missing rootNode or allAgents");
+      return;
+    }
 
     const spacingX = 420;
     const spacingY = 160;
@@ -598,13 +599,13 @@ function MultiAgent() {
       }
     });
 
-    setNodes((prev) => [
-      prev.find((n) => n.id === "root"),
-      ...newNodes,
-      ...appNodes,
-      ...apiNodes,
-    ]);
-    setEdges([...newEdges, ...appEdges, ...apiEdges]);
+    const currentRootNode = nodes.find((n) => n.id === "root");
+    const allNodes = [currentRootNode, ...newNodes, ...appNodes, ...apiNodes];
+    const allEdges = [...newEdges, ...appEdges, ...apiEdges];
+
+    console.log("Setting nodes:", allNodes.length, "edges:", allEdges.length);
+    setNodes(allNodes);
+    setEdges(allEdges);
 
     setTimeout(() => {
       createButtons(newNodes, sortedVisible, appButtonNodes, apiButtonNodes);
@@ -992,7 +993,7 @@ function MultiAgent() {
           data: {
             ...n.data,
             label: (
-              <div onClick={handleParentClick}>
+              <div onClick={handleParentClick} style={{ cursor: "pointer" }}>
                 <h4 className="title blue">{n.data.label}</h4>
               </div>
             ),
@@ -1054,6 +1055,150 @@ function MultiAgent() {
       >
         <Background />
       </ReactFlow>
+
+      {/* Root Agent Details Side Panel */}
+      <Box
+        sx={{
+          position: "fixed",
+          top: 20,
+          right: rootPanelOpen ? 20 : -450,
+          width: 400,
+          maxHeight: "calc(100vh - 40px)",
+          bgcolor: "#1e293b",
+          border: "1px solid #334155",
+          borderRadius: "12px",
+          boxShadow:
+            "0 4px 6px rgba(0, 0, 0, 0.3), 0 0 15px rgba(96, 165, 250, 0.1)",
+          transition: "right 0.3s ease-in-out",
+          zIndex: 1000,
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: "1px solid #334155",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            bgcolor: "#1e293b",
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{ color: "#60a5fa", fontWeight: "bold" }}
+          >
+            Router Agent Details
+          </Typography>
+          <IconButton
+            onClick={handleCloseRootPanel}
+            size="small"
+            sx={{ color: "#cbd5e1", "&:hover": { color: "#60a5fa" } }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        {selectedRootAgent && (
+          <Box sx={{ p: 3, overflow: "auto", flex: 1, bgcolor: "#1e293b" }}>
+            <Typography
+              variant="h5"
+              sx={{ mb: 2, color: "#60a5fa", fontWeight: "bold" }}
+            >
+              {selectedRootAgent.agent_name || "Router Agent Multi"}
+            </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#93c5fd" }}
+              >
+                Description
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ color: "#cbd5e1", lineHeight: 1.6 }}
+              >
+                {selectedRootAgent.description || "No description available"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#93c5fd" }}
+              >
+                Model Name
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#dbeafe",
+                  bgcolor: "#1e3a8a",
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: "1px solid #3b82f6",
+                  fontFamily: "monospace",
+                }}
+              >
+                {selectedRootAgent.model_name || "Not specified"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#93c5fd" }}
+              >
+                Base URL
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "#dbeafe",
+                  bgcolor: "#1e3a8a",
+                  p: 1.5,
+                  borderRadius: 1,
+                  border: "1px solid #3b82f6",
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                }}
+              >
+                {selectedRootAgent.base_url || "Not specified"}
+              </Typography>
+            </Box>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{ fontWeight: "bold", mb: 1, color: "#93c5fd" }}
+              >
+                Prompt Template
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: "pre-wrap",
+                  bgcolor: "#1e3a8a",
+                  p: 2,
+                  borderRadius: 1,
+                  fontFamily: "monospace",
+                  fontSize: "0.85rem",
+                  color: "#dbeafe",
+                  border: "1px solid #3b82f6",
+                  maxHeight: "300px",
+                  overflow: "auto",
+                }}
+              >
+                {selectedRootAgent.prompt_template ||
+                  "No prompt template available"}
+              </Typography>
+            </Box>
+          </Box>
+        )}
+      </Box>
 
       {/* Agent Details Side Panel */}
       <Box
