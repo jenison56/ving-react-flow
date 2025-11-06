@@ -7,6 +7,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ContextMenu from "../ContextMenu";
@@ -15,35 +16,31 @@ function SingleAgent() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [menu, setMenu] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const [agentDetails, setAgentDetails] = useState(null);
+  const [agentData, setAgentData] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(true);
   const ref = useRef(null);
+
+  const handleToggleNode = useCallback(() => {
+    setIsExpanded((prev) => !prev);
+  }, []);
 
   useEffect(() => {
     const fetchAgentData = async () => {
       try {
-        const agentName = "YouFibre Sales Agent";
-        const response = await fetch(
-          `http://68.233.117.127:2090/api/agent-payload/latest/${agentName}`,
-          {
-            headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ0ZW5hbnRfaWQiOjEsImV4cCI6MTc2MjM0NTM3MH0.l5iNAfFpPhtrVQz7K8EY-_RNwLsFczCfMc1OcUEMRZg",
-            },
-          }
-        );
+        const response = await fetch("/router_agent_single.json");
 
-        if (!response.ok) throw new Error(`API error: ${response.status}`);
+        if (!response.ok) {
+          throw new Error("Failed to load local JSON");
+        }
+
         const data = await response.json();
+        console.log("Loaded Data:", JSON.stringify(data, null, 2));
+        setAgentData(data);
 
-        const agent =
-          data?.configuration?.agent_data?.agent ||
-          data?.configuration?.agent_data?.router_agent ||
-          {};
+        // Extract agent details from the response
+        const agent = data?.agent || {};
 
-        setAgentDetails(agent);
-
-        // 🌟 Parent Node styled exactly like Router Agent Multi
+        // Parent Node - Agent Name
         const parentNode = {
           id: "1",
           position: { x: 700, y: 0 },
@@ -51,45 +48,53 @@ function SingleAgent() {
           className: "root-node",
           data: {
             label: (
-              <div className="root-label">
+              <div className="root-label" onClick={handleToggleNode}>
                 <h3 className="title blue">
-                  {data?.configuration?.agent_name ||
-                    agent.agentName ||
-                    "YouFibre Sales Agent"}
+                  {agent.agentName || "YouFibre Sales Agent"}
                 </h3>
               </div>
             ),
           },
         };
 
-        // 🌟 Child Node (Agent Details)
+        // Child Node - Agent Details
         const childNode = {
           id: "2",
-          position: { x: 700, y: 300 },
-          style: { width: 460 },
+          position: { x: 700, y: 200 },
+          style: { width: 460, padding: "15px" },
           className: "agent-node",
           data: {
             label: (
               <div className="agent-content">
-                <div className="title blue">Agent Details</div>
-                <div>
-                  <strong>Description:</strong>{" "}
-                  {agent.agentDescription || "N/A"}
+                <div className="title blue" style={{ marginBottom: "10px" }}>
+                  Agent Details
                 </div>
-                <div>
-                  <strong>Model:</strong> {agent.model_name || "N/A"}
-                </div>
-
-                <div className="button-center">
-                  <button
-                    className="toggle-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDetails((prev) => !prev);
-                    }}
-                  >
-                    {showDetails ? "Hide Summary" : "Show Summary"}
-                  </button>
+                <div style={{ fontSize: "14px", lineHeight: "1.6" }}>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>Model:</strong> {agent.model_name || "N/A"}
+                  </div>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>App URL:</strong>{" "}
+                    {agent.agentAppUrl ? (
+                      <a
+                        href={agent.agentAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: "#3b82f6" }}
+                      >
+                        {agent.agentAppUrl}
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </div>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>Document:</strong> {agent.documentName || "N/A"}
+                  </div>
+                  <div style={{ marginBottom: "8px" }}>
+                    <strong>Description:</strong>{" "}
+                    {agent.agentDescription || "N/A"}
+                  </div>
                 </div>
               </div>
             ),
@@ -100,97 +105,51 @@ function SingleAgent() {
           id: "e1-2",
           source: "1",
           target: "2",
-          style: { stroke: "#3b82f6", strokeWidth: 2 },
+          style: { stroke: "#60a5fa", strokeWidth: 2 },
+          markerEnd: { type: MarkerType.ArrowClosed, color: "#60a5fa" },
         };
 
-        setNodes([parentNode, childNode]);
-        setEdges([edge]);
+        if (isExpanded) {
+          setNodes([parentNode, childNode]);
+          setEdges([edge]);
+        } else {
+          setNodes([parentNode]);
+          setEdges([]);
+        }
       } catch (error) {
-        console.error("❌ Error fetching agent data:", error);
+        console.error("Error fetching agent data:", error);
       }
     };
 
     fetchAgentData();
-  }, []);
-
-  // 🌟 Dynamically update summary on toggle
-  useEffect(() => {
-    if (!agentDetails) return;
-
-    setNodes((prev) =>
-      prev.map((n) =>
-        n.id !== "2"
-          ? n
-          : {
-              ...n,
-              data: {
-                ...n.data,
-                label: (
-                  <div className="agent-content">
-                    <div className="title blue">Agent Details</div>
-                    <div>
-                      <strong>Description:</strong>{" "}
-                      {agentDetails.agentDescription || "N/A"}
-                    </div>
-                    <div>
-                      <strong>Model:</strong> {agentDetails.model_name || "N/A"}
-                    </div>
-
-                    <div className="button-center">
-                      <button
-                        className="toggle-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDetails((prev) => !prev);
-                        }}
-                      >
-                        {showDetails ? "Hide Summary" : "Show More"}
-                      </button>
-                    </div>
-
-                    {showDetails && (
-                      <div className="summary-box">
-                        {Object.entries(agentDetails)
-                          .filter(([key]) => key !== "agentPrompt")
-                          .map(([key, value]) => (
-                            <div key={key} style={{ marginBottom: "4px" }}>
-                              <strong>{key}:</strong>{" "}
-                              {typeof value === "object"
-                                ? JSON.stringify(value)
-                                : value?.toString() || "N/A"}
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                ),
-              },
-            }
-      )
-    );
-  }, [showDetails, agentDetails]);
+  }, [setNodes, setEdges, isExpanded, handleToggleNode]);
 
   const onConnect = useCallback(
     (params) => setEdges((els) => addEdge(params, els)),
     [setEdges]
   );
 
-  const onNodeContextMenu = useCallback((event, node) => {
-    event.preventDefault();
-    const pane = ref.current.getBoundingClientRect();
-    setMenu({
-      id: node.id,
-      top: event.clientY < pane.height - 200 && event.clientY,
-      left: event.clientX < pane.width - 200 && event.clientX,
-      right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
-      bottom: event.clientY >= pane.height - 200 && pane.height - event.clientY,
-    });
-  }, []);
+  const onNodeContextMenu = useCallback(
+    (event, node) => {
+      event.preventDefault();
 
-  const onPaneClick = useCallback(() => setMenu(null), []);
+      const pane = ref.current.getBoundingClientRect();
+      setMenu({
+        id: node.id,
+        top: event.clientY < pane.height - 200 && event.clientY,
+        left: event.clientX < pane.width - 200 && event.clientX,
+        right: event.clientX >= pane.width - 200 && pane.width - event.clientX,
+        bottom:
+          event.clientY >= pane.height - 200 && pane.height - event.clientY,
+      });
+    },
+    [setMenu]
+  );
+
+  const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
 
   return (
-    <div className="flow-container dark-bg">
+    <div className="flow-wrapper">
       <ReactFlow
         ref={ref}
         nodes={nodes}
@@ -201,10 +160,8 @@ function SingleAgent() {
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         fitView
-        panOnScroll
-        zoomOnScroll
       >
-        <Background color="#1e293b" gap={20} />
+        <Background />
         {menu && <ContextMenu onClick={onPaneClick} {...menu} />}
       </ReactFlow>
     </div>

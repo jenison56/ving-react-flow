@@ -21,7 +21,7 @@ function MultiAgent() {
   const [allAgents, setAllAgents] = useState([]);
   const [rootAgentName, setRootAgentName] = useState("Router Agent Multi");
   const [visibleNodes, setVisibleNodes] = useState([0, 4, 9]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState(null);
@@ -109,7 +109,7 @@ function MultiAgent() {
     const rootNode = nodes.find((n) => n.id === "root");
     if (!rootNode || allAgents.length === 0) return;
 
-    const spacingX = 380;
+    const spacingX = 420;
     const spacingY = 160;
 
     const sortedVisible = [...visibleNodes].sort((a, b) => a - b);
@@ -135,7 +135,8 @@ function MultiAgent() {
       id: `edge-root-${n.id}`,
       source: "root",
       target: n.id,
-      markerEnd: { type: MarkerType.ArrowClosed },
+      markerEnd: { type: MarkerType.ArrowClosed, color: "#60a5fa" },
+      style: { stroke: "#60a5fa" },
     }));
 
     // Add application child nodes for expanded agents
@@ -177,7 +178,7 @@ function MultiAgent() {
             position: {
               x:
                 agentNode.position.x +
-                (displayIdx - (sortedVisibleApps.length - 1) / 2) * 200,
+                (displayIdx - (sortedVisibleApps.length - 1) / 2) * 260,
               y: agentNode.position.y + spacingY + 60,
             },
             className: "app-node",
@@ -189,7 +190,8 @@ function MultiAgent() {
             id: `edge-${agentNode.id}-${appId}`,
             source: agentNode.id,
             target: appId,
-            markerEnd: { type: MarkerType.ArrowClosed },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#22d3ee" },
+            style: { stroke: "#22d3ee" },
           });
         });
 
@@ -232,14 +234,47 @@ function MultiAgent() {
             const leftExpanded = leftHidden.length === 0;
 
             if (leftAppIndices.length > 0) {
+              // Calculate button position - find the actual nodes to position between
+              let leftAppButtonX;
+
+              // Find the node just before the middle node in the visible list
+              const middleIndex =
+                sortedVisibleApps[Math.floor(sortedVisibleApps.length / 2)];
+              const visibleBeforeMiddle = sortedVisibleApps.filter(
+                (idx) => idx < middleIndex
+              );
+
+              if (visibleBeforeMiddle.length > 0) {
+                const nodeBeforeMiddleIdx =
+                  visibleBeforeMiddle[visibleBeforeMiddle.length - 1];
+                const nodeBeforeMiddle = appNodes.find(
+                  (n) => n.id === `app-${agentIndex}-${nodeBeforeMiddleIdx}`
+                );
+                if (nodeBeforeMiddle) {
+                  leftAppButtonX =
+                    (nodeBeforeMiddle.position.x + middleAppNode.position.x) /
+                      2 +
+                    (nodeBeforeMiddle.style?.width || 180) / 2 -
+                    25;
+                } else {
+                  leftAppButtonX =
+                    (firstAppNode.position.x + middleAppNode.position.x) / 2 +
+                    (firstAppNode.style?.width || 180) / 2 -
+                    25;
+                }
+              } else {
+                leftAppButtonX =
+                  (firstAppNode.position.x + middleAppNode.position.x) / 2 +
+                  (firstAppNode.style?.width || 180) / 2 -
+                  25;
+              }
+
               appButtonNodes.push({
                 id: `btn-app-${agentIndex}-left`,
                 type: "expandButton",
                 position: {
-                  x:
-                    (firstAppNode.position.x + middleAppNode.position.x) / 2 -
-                    25,
-                  y: firstAppNode.position.y,
+                  x: leftAppButtonX,
+                  y: firstAppNode.position.y + 35,
                 },
                 draggable: false,
                 selectable: false,
@@ -275,14 +310,46 @@ function MultiAgent() {
             const rightExpanded = rightHidden.length === 0;
 
             if (rightAppIndices.length > 0) {
+              // Calculate button position - find the actual nodes to position between
+              let rightAppButtonX;
+
+              // Find the node just after the middle node in the visible list
+              const middleIndex =
+                sortedVisibleApps[Math.floor(sortedVisibleApps.length / 2)];
+              const visibleAfterMiddle = sortedVisibleApps.filter(
+                (idx) => idx > middleIndex
+              );
+
+              if (visibleAfterMiddle.length > 0) {
+                const nodeAfterMiddleIdx = visibleAfterMiddle[0];
+                const nodeAfterMiddle = appNodes.find(
+                  (n) => n.id === `app-${agentIndex}-${nodeAfterMiddleIdx}`
+                );
+                if (nodeAfterMiddle) {
+                  rightAppButtonX =
+                    (middleAppNode.position.x + nodeAfterMiddle.position.x) /
+                      2 +
+                    (middleAppNode.style?.width || 180) / 2 -
+                    25;
+                } else {
+                  rightAppButtonX =
+                    (middleAppNode.position.x + lastAppNode.position.x) / 2 +
+                    (middleAppNode.style?.width || 180) / 2 -
+                    25;
+                }
+              } else {
+                rightAppButtonX =
+                  (middleAppNode.position.x + lastAppNode.position.x) / 2 +
+                  (middleAppNode.style?.width || 180) / 2 -
+                  25;
+              }
+
               appButtonNodes.push({
                 id: `btn-app-${agentIndex}-right`,
                 type: "expandButton",
                 position: {
-                  x:
-                    (middleAppNode.position.x + lastAppNode.position.x) / 2 -
-                    25,
-                  y: middleAppNode.position.y,
+                  x: rightAppButtonX,
+                  y: middleAppNode.position.y + 35,
                 },
                 draggable: false,
                 selectable: false,
@@ -336,7 +403,7 @@ function MultiAgent() {
             position: {
               x:
                 appNode.position.x +
-                (displayIdx - (sortedVisibleApis.length - 1) / 2) * 170,
+                (displayIdx - (sortedVisibleApis.length - 1) / 2) * 230,
               y: appNode.position.y + spacingY + 60,
             },
             className: "api-node",
@@ -348,7 +415,8 @@ function MultiAgent() {
             id: `edge-${appNode.id}-${apiId}`,
             source: appNode.id,
             target: apiId,
-            markerEnd: { type: MarkerType.ArrowClosed },
+            markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
+            style: { stroke: "#818cf8" },
           });
         });
 
@@ -392,14 +460,49 @@ function MultiAgent() {
             const leftExpanded = leftHidden.length === 0;
 
             if (leftApiIndices.length > 0) {
+              // Calculate button position - find the actual nodes to position between
+              let leftApiButtonX;
+
+              // Find the node just before the middle node in the visible list
+              const middleIndex =
+                sortedVisibleApis[Math.floor(sortedVisibleApis.length / 2)];
+              const visibleBeforeMiddle = sortedVisibleApis.filter(
+                (idx) => idx < middleIndex
+              );
+
+              if (visibleBeforeMiddle.length > 0) {
+                const nodeBeforeMiddleIdx =
+                  visibleBeforeMiddle[visibleBeforeMiddle.length - 1];
+                const nodeBeforeMiddle = apiNodes.find(
+                  (n) =>
+                    n.id ===
+                    `api-${agentIndex}-${appIndex}-${nodeBeforeMiddleIdx}`
+                );
+                if (nodeBeforeMiddle) {
+                  leftApiButtonX =
+                    (nodeBeforeMiddle.position.x + middleApiNode.position.x) /
+                      2 +
+                    (nodeBeforeMiddle.style?.width || 150) / 2 -
+                    25;
+                } else {
+                  leftApiButtonX =
+                    (firstApiNode.position.x + middleApiNode.position.x) / 2 +
+                    (firstApiNode.style?.width || 150) / 2 -
+                    25;
+                }
+              } else {
+                leftApiButtonX =
+                  (firstApiNode.position.x + middleApiNode.position.x) / 2 +
+                  (firstApiNode.style?.width || 150) / 2 -
+                  25;
+              }
+
               apiButtonNodes.push({
                 id: `btn-api-${agentIndex}-${appIndex}-left`,
                 type: "expandButton",
                 position: {
-                  x:
-                    (firstApiNode.position.x + middleApiNode.position.x) / 2 -
-                    25,
-                  y: firstApiNode.position.y,
+                  x: leftApiButtonX,
+                  y: firstApiNode.position.y + 20,
                 },
                 draggable: false,
                 selectable: false,
@@ -435,14 +538,48 @@ function MultiAgent() {
             const rightExpanded = rightHidden.length === 0;
 
             if (rightApiIndices.length > 0) {
+              // Calculate button position - find the actual nodes to position between
+              let rightApiButtonX;
+
+              // Find the node just after the middle node in the visible list
+              const middleIndex =
+                sortedVisibleApis[Math.floor(sortedVisibleApis.length / 2)];
+              const visibleAfterMiddle = sortedVisibleApis.filter(
+                (idx) => idx > middleIndex
+              );
+
+              if (visibleAfterMiddle.length > 0) {
+                const nodeAfterMiddleIdx = visibleAfterMiddle[0];
+                const nodeAfterMiddle = apiNodes.find(
+                  (n) =>
+                    n.id ===
+                    `api-${agentIndex}-${appIndex}-${nodeAfterMiddleIdx}`
+                );
+                if (nodeAfterMiddle) {
+                  rightApiButtonX =
+                    (middleApiNode.position.x + nodeAfterMiddle.position.x) /
+                      2 +
+                    (middleApiNode.style?.width || 150) / 2 -
+                    25;
+                } else {
+                  rightApiButtonX =
+                    (middleApiNode.position.x + lastApiNode.position.x) / 2 +
+                    (middleApiNode.style?.width || 150) / 2 -
+                    25;
+                }
+              } else {
+                rightApiButtonX =
+                  (middleApiNode.position.x + lastApiNode.position.x) / 2 +
+                  (middleApiNode.style?.width || 150) / 2 -
+                  25;
+              }
+
               apiButtonNodes.push({
                 id: `btn-api-${agentIndex}-${appIndex}-right`,
                 type: "expandButton",
                 position: {
-                  x:
-                    (middleApiNode.position.x + lastApiNode.position.x) / 2 -
-                    25,
-                  y: middleApiNode.position.y,
+                  x: rightApiButtonX,
+                  y: middleApiNode.position.y + 20,
                 },
                 draggable: false,
                 selectable: false,
@@ -497,12 +634,40 @@ function MultiAgent() {
     );
     const leftExpanded = leftHidden.length === 0;
 
+    // Calculate button position based on expanded state
+    let leftButtonX;
+    if (leftExpanded) {
+      // When expanded, position between the last visible left node and node5
+      const lastLeftVisible = Math.max(
+        ...leftIndices.filter((idx) => sortedVisible.includes(idx))
+      );
+      const lastLeftNode = agentNodes.find(
+        (n) => n.id === `agent-${lastLeftVisible + 1}`
+      );
+      if (lastLeftNode) {
+        leftButtonX =
+          (lastLeftNode.position.x + node5.position.x) / 2 +
+          (lastLeftNode.style?.width || 280) / 2 -
+          25;
+      } else {
+        leftButtonX =
+          (node1.position.x + node5.position.x) / 2 +
+          (node1.style?.width || 280) / 2 -
+          25;
+      }
+    } else {
+      leftButtonX =
+        (node1.position.x + node5.position.x) / 2 +
+        (node1.style?.width || 280) / 2 -
+        25;
+    }
+
     expandButtons.push({
       id: `btn-toggle-before-5`,
       type: "expandButton",
       position: {
-        x: (node1.position.x + node5.position.x) / 2 - 25,
-        y: node1.position.y,
+        x: leftButtonX,
+        y: node1.position.y + 50,
       },
       draggable: false,
       selectable: false,
@@ -525,12 +690,40 @@ function MultiAgent() {
     );
     const rightExpanded = rightHidden.length === 0;
 
+    // Calculate button position based on expanded state
+    let rightButtonX;
+    if (rightExpanded) {
+      // When expanded, position between node5 and the first visible right node
+      const firstRightVisible = Math.min(
+        ...rightIndices.filter((idx) => sortedVisible.includes(idx))
+      );
+      const firstRightNode = agentNodes.find(
+        (n) => n.id === `agent-${firstRightVisible + 1}`
+      );
+      if (firstRightNode) {
+        rightButtonX =
+          (node5.position.x + firstRightNode.position.x) / 2 +
+          (node5.style?.width || 280) / 2 -
+          25;
+      } else {
+        rightButtonX =
+          (node5.position.x + node10.position.x) / 2 +
+          (node5.style?.width || 280) / 2 -
+          25;
+      }
+    } else {
+      rightButtonX =
+        (node5.position.x + node10.position.x) / 2 +
+        (node5.style?.width || 280) / 2 -
+        25;
+    }
+
     expandButtons.push({
       id: `btn-toggle-after-5`,
       type: "expandButton",
       position: {
-        x: (node5.position.x + node10.position.x) / 2 - 25,
-        y: node5.position.y,
+        x: rightButtonX,
+        y: node5.position.y + 50,
       },
       draggable: false,
       selectable: false,
