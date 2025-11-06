@@ -38,7 +38,7 @@ const App = () => {
             margin: 0,
             padding: 0,
             background: "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)",
-            position: "fixed", // ensures no scroll
+            position: "fixed",
             top: 0,
             left: 0,
             right: 0,

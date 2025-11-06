@@ -44,7 +44,8 @@ function MultiAgent() {
         const data = await res.json();
 
         const agentName = data.agent_name || "Router Agent Multi";
-        const routerAgentData = data?.configuration?.agent_data?.router_agent || {};
+        const routerAgentData =
+          data?.configuration?.agent_data?.router_agent || {};
         const associatedAgents = routerAgentData?.associated_agents || [];
 
         setRootAgentName(agentName);
@@ -57,7 +58,11 @@ function MultiAgent() {
             position: { x: 700, y: 0 },
             style: { width: 340 },
             className: "root-node",
-            data: { label: agentName, expanded: true, rootAgent: routerAgentData },
+            data: {
+              label: agentName,
+              expanded: true,
+              rootAgent: routerAgentData,
+            },
           },
         ]);
       } catch (err) {

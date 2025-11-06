@@ -1,4 +1,4 @@
-/* === Container === */
+/* Container */
 .flow-wrapper {
   width: 100%;
   height: 100vh;
@@ -8,7 +8,7 @@
   justify-content: center;
 }
 
-/* === Root Node === */
+/* Root Node */
 .root-node {
   background: #1e293b;
   border: 1px solid #334155;
@@ -27,7 +27,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 25px rgba(96, 165, 250, 0.25);
 }
 
-/* === Agent Node === */
+/* Agent Node */
 .agent-node {
   background: #1e293b;
   border: 1px solid #334155;
@@ -53,7 +53,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 0 15px rgba(96, 165, 250, 0.1);
 }
 
-/* === Application Nodes === */
+/* Application Nodes */
 .app-node {
   background: #1e293b;
   border: 1px solid #0891b2;
@@ -72,7 +72,7 @@
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4), 0 0 20px rgba(8, 145, 178, 0.2);
 }
 
-/* === API Nodes === */
+/* API Nodes */
 .api-node {
   background: #1e293b;
   border: 1px solid #6366f1;
@@ -91,7 +91,7 @@
   box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4), 0 0 20px rgba(99, 102, 241, 0.2);
 }
 
-/* === Button Nodes (Between Nodes) === */
+/* Button Nodes (Between Nodes) */
 .button-node {
   background: #334155;
   color: #94a3b8;
@@ -113,7 +113,7 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* === Pagination Controls === */
+/* Pagination Controls */
 .pagination-controls {
   display: flex;
   justify-content: center;
@@ -138,7 +138,7 @@
   transform: translateY(-2px);
 }
 
-/* === Titles and Text === */
+/* Titles and Text */
 .title.blue {
   color: #60a5fa;
   margin: 0 0 8px 0;
@@ -166,7 +166,7 @@
   line-height: 1.6;
 }
 
-/* === Responsive Fixes === */
+/* Responsive Fixes */
 @media (max-width: 768px) {
   .flow-wrapper {
     height: 80vh;
